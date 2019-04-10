@@ -129,22 +129,41 @@ class AttentionModule(nn.Module):
         self.att_method = args.att_method
         self.lstm_hidden_dim = args.lstm_hidden_dim
 
-        self.att_fc = nn.Linear(self.lstm_hidden_dim * 2, 1)
+        # define parameters
+        if self.att_method == 'general':
+            self.att_bi_fc = nn.Linear(self.lstm_hidden_dim, self.lstm_hidden_dim)
+        elif self.att_method == 'concat':
+            self.att_fc_1 = nn.Linear(self.lstm_hidden_dim * 2, self.lstm_hidden_dim)
+            self.att_fc_2 = nn.Linear(self.lstm_hidden_dim, 1)
 
     def forward(self, query, keys, values=None):
         # query: [B, 1, d1]
         # keys: [B, L, d2] - padding?
         if not values:
             values = keys
-        # concatenation + linear
+
         batch_size = query.shape[0]
         max_src_len = keys.shape[1]
 
-        query = query.repeat(1, max_src_len, 1)  # [B, L, d1]
-        # try different method
-        energy = self.att_fc(torch.cat((query, keys), dim=-1))  # [B, L, (d1+d2)] -> [B, L, 1]
+        # find a way to produce a scalar between two vectors (batched ones)
+        if self.att_method == 'dot':
+            assert query.shape[-1] == keys.shape[-1], 'Not matched dim!'
+            keys = keys.permute(0, 2, 1)  # [B, d2, L]
+            energy = torch.bmm(query, keys)  # [B, 1, d1] *  [B, d2, L] -> [B, 1, L]
 
-        energy = energy.permute(0, 2, 1)  # [B, ,1, L]
+        elif self.att_method == 'general':
+            energy = self.att_bi_fc(query)  # [B, 1, d1']
+            keys = keys.permute(0, 2, 1)  # [B, d2, L]
+            energy = torch.bmm(energy, keys)  # [B, 1, d1'] *  [B, d2, L] -> [B, 1, L]
+
+        elif self.att_method == 'concat':
+            query = query.repeat(1, max_src_len, 1)  # [B, L, d1]
+            energy = self.att_fc_1(torch.cat((query, keys), dim=-1))  # [B, L, (d1+d2)] -> [B, L, d]
+            energy = self.att_fc_2(torch.tanh(energy))  # [B, L, 1]
+            energy = energy.permute(0, 2, 1)  # [B, 1, L]
+        else:
+            raise ValueError
+
         att_weight = F.softmax(energy, dim=-1)  # [B, 1, L]
         att_vec = torch.bmm(att_weight, values)  # [B, 1, L] * [B, L, d2] -> [B, 1, d2]
 

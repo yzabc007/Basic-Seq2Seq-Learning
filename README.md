@@ -27,6 +27,7 @@ TODO:
 - Comparing the performance with reported results of papers in formal datasets
 - Beam searching
 - Implementing "Attention is all you need".
+- Training Seq2seq by RL
 
 Some resources I refer to during the implementation:
 > https://pytorch.org/tutorials/intermediate/seq2seq_translation_tutorial.html

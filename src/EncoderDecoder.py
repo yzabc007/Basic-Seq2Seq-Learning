@@ -136,7 +136,7 @@ class AttentionModule(nn.Module):
             self.att_fc_1 = nn.Linear(self.lstm_hidden_dim * 2, self.lstm_hidden_dim)
             self.att_fc_2 = nn.Linear(self.lstm_hidden_dim, 1)
 
-    def forward(self, query, keys, values=None):
+    def forward(self, query, keys, values=None, mask=None):
         # query: [B, 1, d1]
         # keys: [B, L, d2] - padding?
         if not values:
@@ -164,6 +164,7 @@ class AttentionModule(nn.Module):
         else:
             raise ValueError
 
+        energy = energy.masked_fill_(mask.unsqueeze(1), -1e10)
         att_weight = F.softmax(energy, dim=-1)  # [B, 1, L]
         att_vec = torch.bmm(att_weight, values)  # [B, 1, L] * [B, L, d2] -> [B, 1, d2]
 
@@ -197,7 +198,7 @@ class BahdanauAttDecoder(nn.Module):
         initrange = 0.5 / self.word_dim
         self.embeddings.weight.data.uniform_(-initrange, initrange)
 
-    def forward(self, input_seqs, last_hidden, encoder_outputs):
+    def forward(self, input_seqs, last_hidden, encoder_outputs, mask=None):
         # input_seqs: [B, 1] - feed inputs at one time step
         # last_hidden: ([1, B, d_de], [1, B, d_de]) for LSTM
         # encoder_outputs: [B, L, d_en]
@@ -206,7 +207,7 @@ class BahdanauAttDecoder(nn.Module):
         embed_x = self.dropout(self.embeddings(input_seqs))  # [B, 1, d_emb]
 
         last_h_t = last_hidden[0].permute(1, 0, 2)  # [B, 1, d]
-        att_weight, att_vec = self.att_module(last_h_t, encoder_outputs)  # [B, 1, L], [B, 1, d]
+        att_weight, att_vec = self.att_module(last_h_t, encoder_outputs, mask=mask)  # [B, 1, L], [B, 1, d]
 
         embed_context = torch.cat((embed_x, att_vec), dim=-1)  # [B, 1, (d1+d2)]
         lstm_output, hidden = self.lstm(embed_context, last_hidden)  # [B, 1, d3]
@@ -242,7 +243,7 @@ class LuongAttDecoder(nn.Module):
         initrange = 0.5 / self.word_dim
         self.embeddings.weight.data.uniform_(-initrange, initrange)
 
-    def forward(self, input_seqs, last_context, last_hidden, encoder_outputs):
+    def forward(self, input_seqs, last_context, last_hidden, encoder_outputs, mask=None):
         # one step at a time
         embed_x = self.dropout(self.embeddings(input_seqs))  # [B, 1, d1]
 
@@ -250,7 +251,7 @@ class LuongAttDecoder(nn.Module):
         lstm_output, hidden = self.lstm(embed_context, last_hidden)  # [B, L, d3]
 
         current_h_t = hidden[0].permute(1, 0, 2)  # [B, 1, d]
-        att_weight, att_vec = self.att_module(current_h_t, encoder_outputs)  # [B, 1, L], [B, 1, d]
+        att_weight, att_vec = self.att_module(current_h_t, encoder_outputs, mask=mask)  # [B, 1, L], [B, 1, d]
 
         lstm_context = torch.cat((lstm_output, att_vec), dim=-1)  # [B, L, (d3+d2)]
         logits = self.decoder_out(lstm_context)

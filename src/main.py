@@ -27,7 +27,8 @@ def main():
     parser.add_argument('--random_seed', type=float, default=42)
     parser.add_argument('--teacher_forcing_ratio', type=float, default=0.5)
     parser.add_argument('--max_decode_len', type=int, default=100)
-    parser.add_argument('--att_method', type=str, default='cat')
+    parser.add_argument('--att_method', type=str, default='concat')
+    parser.add_argument('--seq_model', type=str, default='simple')
 
     # I/O parameters
     parser.add_argument('--train_dir', type=str, default='./eng-fra.txt')

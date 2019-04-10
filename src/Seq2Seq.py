@@ -192,13 +192,14 @@ class BahdanauAttSeq2Seq(nn.Module):
         # print(input_tgt.shape, tgt_length.shape)
         # encoding
         encoder_outputs, encoder_hidden = self.encoder(input_src, src_length)
+        mask = (input_src == config.PAD_WORD)
 
         # decoding
         recur_input = input_tgt[:, 0].unsqueeze(1)
         recur_hidden = encoder_hidden
         decoder_logits = []
         for di in range(input_tgt.shape[1]):
-            cur_logits, recur_hidden = self.decoder(recur_input, recur_hidden, encoder_outputs)
+            cur_logits, recur_hidden = self.decoder(recur_input, recur_hidden, encoder_outputs, mask=mask)
             decoder_logits.append(cur_logits)
             cur_logits_flat = cur_logits.reshape(-1, self.tgt_vocab_size)
             teacher_force = np.random.random() < teacher_forcing_ratio
@@ -218,6 +219,7 @@ class BahdanauAttSeq2Seq(nn.Module):
 
             input_src = torch.tensor([src_sent_idx], device=self.device)
             src_length = torch.tensor([len(src_sent_idx)], device=self.device)
+            mask = (input_src == config.PAD_WORD)
 
             # encoder_hidden = model.encoder.initHidden()
             encoder_outputs, encoder_hidden = self.encoder(input_src, src_length)
@@ -227,7 +229,7 @@ class BahdanauAttSeq2Seq(nn.Module):
             decoded_ids = []
             decoded_words = []
             for di in range(self.max_decode_len):
-                decoder_logits, decoder_hidden = self.decoder(decoder_input, decoder_hidden, encoder_outputs)
+                decoder_logits, decoder_hidden = self.decoder(decoder_input, decoder_hidden, encoder_outputs, mask=mask)
                 # print(decoder_logits.shape)
                 decoder_logits = decoder_logits.reshape(-1, self.tgt_vocab_size)
                 topv, topi = decoder_logits.data.topk(1)
@@ -270,6 +272,7 @@ class LuongAttSeq2Seq(nn.Module):
         # encoding
         batch_size = input_tgt.shape[0]
         encoder_outputs, encoder_hidden = self.encoder(input_src, src_length)
+        mask = (input_src == config.PAD_WORD)
 
         # decoding
         recur_input = input_tgt[:, 0].unsqueeze(1)
@@ -280,7 +283,8 @@ class LuongAttSeq2Seq(nn.Module):
             cur_logits, recur_hidden, recur_context = self.decoder(recur_input,
                                                                    recur_context,
                                                                    recur_hidden,
-                                                                   encoder_outputs)
+                                                                   encoder_outputs,
+                                                                   mask=mask)
             decoder_logits.append(cur_logits)
             cur_logits_flat = cur_logits.reshape(-1, self.tgt_vocab_size)
             teacher_force = np.random.random() < teacher_forcing_ratio
@@ -300,6 +304,7 @@ class LuongAttSeq2Seq(nn.Module):
 
             input_src = torch.tensor([src_sent_idx], device=self.device)
             src_length = torch.tensor([len(src_sent_idx)], device=self.device)
+            mask = (input_src == config.PAD_WORD)
 
             # encoder_hidden = model.encoder.initHidden()
             encoder_outputs, encoder_hidden = self.encoder(input_src, src_length)
@@ -313,7 +318,8 @@ class LuongAttSeq2Seq(nn.Module):
                 decoder_logits, decoder_hidden, decoder_context = self.decoder(decoder_input,
                                                                                decoder_context,
                                                                                decoder_hidden,
-                                                                               encoder_outputs)
+                                                                               encoder_outputs,
+                                                                               mask=mask)
                 # print(decoder_logits.shape)
                 decoder_logits = decoder_logits.reshape(-1, self.tgt_vocab_size)
                 topv, topi = decoder_logits.data.topk(1)

@@ -27,10 +27,15 @@ TODO:
 
 Some resources I refer to during the implementation:
 > https://pytorch.org/tutorials/intermediate/seq2seq_translation_tutorial.html
+
 > https://github.com/bentrevett/pytorch-seq2seq
+
 > https://github.com/spro/practical-pytorch/tree/master/seq2seq-translation
+
 > https://github.com/IBM/pytorch-seq2seq
+
 > https://github.com/MaximumEntropy/Seq2Seq-PyTorch
+
 > https://github.com/pytorch/tutorials/tree/master/intermediate_source
 
 

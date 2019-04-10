@@ -22,8 +22,11 @@ This implementation features the following functionalities:
 - Mini-batching (although the decoder goes one step at one time)
 
 TODO:
+- ~~Adding mask for attention~~
+- Making the passing of dimension para more clear
 - Comparing the performance with reported results of papers in formal datasets
 - Beam searching
+- Implementing "Attention is all you need".
 
 Some resources I refer to during the implementation:
 > https://pytorch.org/tutorials/intermediate/seq2seq_translation_tutorial.html

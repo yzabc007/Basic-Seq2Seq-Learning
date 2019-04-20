@@ -1,4 +1,4 @@
-# Basic-Seq2Seq-Lerning
+# Basic-Seq2Seq-Learning
 Basic seq2seq model including simplest encoder &amp; decoder and attention-based ones
 
 This repository implements the "most" basic seq2seq learning as one small step of my own project.
